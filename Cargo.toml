@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 aho-corasick = "0"
 regex = "1"
+pretty_assertions = "1"
