@@ -10,10 +10,6 @@ fn main() {
     let tokenized_search_term = boundaries.split(&search_term).collect::<Vec<&str>>();
     let tokenized_replacement_term = boundaries.split(&replacement_term).collect::<Vec<&str>>();
 
-    // Use boundary indices to break a search term into a tokenized search term.
-    // Boundary characters are removed.
-    let boundary_indices = find_boundary_indices(&search_term);
-
     let mut search_terms = vec![search_term.clone()];
     let mut replacement_terms = vec![replacement_term.clone()];
     for boundary_char in boundary_chars {
@@ -25,49 +21,80 @@ fn main() {
         .unwrap();
 }
 
-fn find_boundary_indices(search_term: &str) -> Vec<u64> {
-    let mut boundary_indices: Vec<u64> = vec![];
-    let mut last_char: Option<char> = None;
-    let mut last_is_boundary = true;
-    let mut current_index = 0;
-    for char in search_term.chars() {
-        // Iterate through characters, noting each time there's a case change or boundary
-        // character.
-        if let Some(last_char) = last_char {
-            let is_case_change = last_char.is_uppercase() ^ char.is_uppercase();
-            let is_snake_kebab_boundary_char = char == '_' || char == '-';
-            if (is_case_change || is_snake_kebab_boundary_char) && !last_is_boundary {
-                boundary_indices.push(current_index);
-                last_is_boundary = true;
+// Takes a string and, if it's in camelCase, PascalCase, snake_case, kebab-case, or Title_Case,
+// splits it into "tokens"
+// Token boundaries occur at the beginning of the string, before the capital letter when case
+// changes, before and after boundary characters, and at the end of the string.
+// We want to split the string before / after the boundary character but including the case change.
+//
+// e.g.
+//     "camelCase"  => ["camel", "Case"]
+//     "aCamelCase" => ["a", "Camel", "Case"]
+//     "HTTPVerb"   => ["HTTP", "Verb"]
+//     "PascalCase" => ["Pascal", "Case"]
+//     "snake_case" => ["snake", "case"]
+//     "kebab-case" => ["kebab", "case"]
+//     "Title_Case" => ["Title", "Case"]
+//     "CONSTANT_CASE" => ["CONSTANT", "CASE"]
+//     "CONSTANT"      => ["CONSTANT"]
+//     "a_constant"    => ["a", "constant"]
+//     "a_Constant"    => ["a", "Constant"]
+//     "A_constant"    => ["a", "Constant"]
+//     "A_B"           => ["A", "B"]
+//     "A_b"           => ["A", "b"]
+//     "aC"            => ["a", "C"] => ["aC", "a-c", "a_c", "A_C"]
+fn tokenize(search_term: &str) -> Vec<u64> {
+    // let mut tokens: Vec<String> = vec![];
+    // The first index is a boundary.
+    let mut boundaries = vec![0];
+    let mut iter = search_term.chars().peekable();
+    let mut index = 0;
+    while let Some(c) = iter.next() {
+        let curr_is_uppercase = c.is_uppercase();
+        let next_character = iter.peek();
+        let next_character_is_case_change =
+            next_character.is_some() && next_character.unwrap().is_uppercase() ^ curr_is_uppercase;
+        if next_character_is_case_change {
+            if curr_is_uppercase {
+                boundaries.push(index);
             } else {
-                last_is_boundary = false;
+                boundaries.push(index + 1);
             }
-        } else {
-            // No last char, the beginning of the word is a boundary.
-            boundary_indices.push(current_index);
         }
-        last_char = Some(char);
-        current_index += 1;
+        index += 1;
     }
-    boundary_indices
+    // The last index is also a boundary.
+    boundaries.push(index);
+
+    // [0, 1, 2]
+    // ["a", "C"]
+    // for (start, end) in boundaries.tuple_windows() {
+    // NEXT: remove duplicate boundary indices
+    // NEXT: figure out how to split search_term
+    // tokens.push(search_term.take(
+    // }
+
+    return boundaries;
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::find_boundary_indices;
+    use crate::tokenize;
     use pretty_assertions::assert_eq;
     #[test]
-    fn test_find_boundary_indices() {
+    fn test_tokenize() {
         let tests = vec![
-            ("camelCase", vec![0, 5]),
-            ("PascalCase", vec![0, 6]),
-            ("snake_case", vec![0, 5]),
-            ("kebab-case", vec![0, 5]),
-            // ("Title_Case", vec![0, 5]),
+            ("PascalCase", vec![0, 6, 10]),
+            ("camelCase", vec![0, 5, 9]), // ["camelCase", "CamelCase", "camel_case", "camel-case", "Camel_Case"]
+                                          // ("camelCase", vec!["camel", "Case"]), // ["camelCase", "CamelCase", "camel_case", "camel-case", "Camel_Case"]
+                                          // ("PascalCase", vec!["Pascal", "Case"]),
+                                          // ("snake_case", vec!["snake", "case"]),
+                                          // ("kebab-case", vec!["kebab", "case"]),
+                                          // ("Title_Case", vec!["Title", "Case"]),
         ];
         for test in tests {
             assert_eq!(
-                find_boundary_indices(test.0),
+                tokenize(test.0),
                 test.1,
                 "testing {}, expected {:?}",
                 test.0,
