@@ -49,6 +49,8 @@ fn tokenize(search_term: &str) -> Vec<u64> {
     let mut boundaries = vec![0];
     let mut iter = search_term.chars().peekable();
     let mut index = 0;
+    iter.next();
+    index += 1;
     while let Some(c) = iter.next() {
         let curr_is_uppercase = c.is_uppercase();
         let next_character = iter.peek();
@@ -60,6 +62,8 @@ fn tokenize(search_term: &str) -> Vec<u64> {
             } else {
                 boundaries.push(index + 1);
             }
+            iter.next();
+            index += 1;
         }
         index += 1;
     }
@@ -69,7 +73,6 @@ fn tokenize(search_term: &str) -> Vec<u64> {
     // [0, 1, 2]
     // ["a", "C"]
     // for (start, end) in boundaries.tuple_windows() {
-    // NEXT: remove duplicate boundary indices
     // NEXT: figure out how to split search_term
     // tokens.push(search_term.take(
     // }
