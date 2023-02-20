@@ -43,7 +43,7 @@ fn main() {
 //     "A_B"           => ["A", "B"]
 //     "A_b"           => ["A", "b"]
 //     "aC"            => ["a", "C"] => ["aC", "a-c", "a_c", "A_C"]
-fn tokenize(search_term: &str) -> Vec<u64> {
+fn find_boundary_indices(search_term: &str) -> Vec<usize> {
     // let mut tokens: Vec<String> = vec![];
     // The first index is a boundary.
     let mut boundaries = vec![0];
@@ -79,28 +79,63 @@ fn tokenize(search_term: &str) -> Vec<u64> {
     // The last index is also a boundary.
     boundaries.push(index);
 
-    // [0, 1, 2]
-    // ["a", "C"]
-    // for (start, end) in boundaries.tuple_windows() {
-    // NEXT: figure out how to split search_term
-    // tokens.push(search_term.take(
-    // }
-
     return boundaries;
+}
+
+fn tokenize(search_term: &str) -> Vec<&str> {
+    use itertools::Itertools;
+    let boundaries = find_boundary_indices(search_term);
+    let mut tokens = Vec::new();
+    for (start, end) in boundaries.iter().tuple_windows() {
+        tokens.push(utf8_slice::slice(search_term, *start, *end));
+    }
+
+    return tokens;
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::tokenize;
+    use crate::{find_boundary_indices, tokenize};
     use pretty_assertions::assert_eq;
     #[test]
-    fn test_tokenize() {
+    fn test_find_boundary_indices() {
         let tests = vec![
             ("camelCase", vec![0, 5, 9]),
             ("PascalCase", vec![0, 6, 10]),
             ("snake_case", vec![0, 5, 6, 10]),
             ("kebab-case", vec![0, 5, 6, 10]),
             ("Title_Case", vec![0, 5, 6, 10]),
+        ];
+        for test in tests {
+            assert_eq!(
+                find_boundary_indices(test.0),
+                test.1,
+                "testing {}, expected {:?}",
+                test.0,
+                test.1,
+            );
+        }
+    }
+
+    #[test]
+    fn test_tokenize() {
+        let tests = vec![
+            ("camelCase", vec!["camel", "Case"]),
+            ("PascalCase", vec!["Pascal", "Case"]),
+            ("snake_case", vec!["snake", "_", "case"]),
+            ("kebab-case", vec!["kebab", "-", "case"]),
+            ("Title_Case", vec!["Title", "_", "Case"]),
+            // ("aCamelCase", vec!["a", "Camel", "Case"]),
+            // ("HTTPVerb", vec!["HTTP", "Verb"]),
+            // ("CONSTANT", vec!["CONSTANT"]),
+            // ("a_constant", vec!["a", "_", "constant"]),
+            // ("a_Constant", vec!["a", "_", "Constant"]),
+            // ("A_constant", vec!["A", "_", "constant"]),
+            // ("A_B", vec!["A", "_", "B"]),
+            // ("A_b", vec!["A", "_", "b"]),
+            // ("CONSTANT_CASE", vec!["CONSTANT", "_", "CASE"]),
+            // ("aC", vec!["a", "C"]),
+            // , ["aC", "a-c", "a_c", "A_C"]
         ];
         for test in tests {
             assert_eq!(
