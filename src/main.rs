@@ -53,6 +53,15 @@ fn tokenize(search_term: &str) -> Vec<u64> {
     index += 1;
     while let Some(c) = iter.next() {
         let curr_is_uppercase = c.is_uppercase();
+        let curr_is_boundary = c == '_' || c == '-';
+        if curr_is_boundary {
+            boundaries.push(index);
+            iter.next();
+            index += 1;
+            boundaries.push(index);
+            index += 1;
+            continue;
+        }
         let next_character = iter.peek();
         let next_character_is_case_change =
             next_character.is_some() && next_character.unwrap().is_uppercase() ^ curr_is_uppercase;
@@ -87,13 +96,11 @@ mod tests {
     #[test]
     fn test_tokenize() {
         let tests = vec![
+            ("camelCase", vec![0, 5, 9]),
             ("PascalCase", vec![0, 6, 10]),
-            ("camelCase", vec![0, 5, 9]), // ["camelCase", "CamelCase", "camel_case", "camel-case", "Camel_Case"]
-                                          // ("camelCase", vec!["camel", "Case"]), // ["camelCase", "CamelCase", "camel_case", "camel-case", "Camel_Case"]
-                                          // ("PascalCase", vec!["Pascal", "Case"]),
-                                          // ("snake_case", vec!["snake", "case"]),
-                                          // ("kebab-case", vec!["kebab", "case"]),
-                                          // ("Title_Case", vec!["Title", "Case"]),
+            ("snake_case", vec![0, 5, 6, 10]),
+            ("kebab-case", vec![0, 5, 6, 10]),
+            ("Title_Case", vec![0, 5, 6, 10]),
         ];
         for test in tests {
             assert_eq!(
