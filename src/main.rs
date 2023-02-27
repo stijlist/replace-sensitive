@@ -85,7 +85,10 @@ fn tokenize(search_term: &str) -> Vec<&str> {
     let boundaries = find_boundary_indices(search_term);
     let mut tokens = Vec::new();
     for (start, end) in boundaries.iter().tuple_windows() {
-        tokens.push(utf8_slice::slice(search_term, *start, *end));
+        let val = utf8_slice::slice(search_term, *start, *end);
+        if !(val == "_" || val == "-") {
+            tokens.push(val);
+        }
     }
 
     return tokens;
@@ -120,9 +123,9 @@ mod tests {
         let tests = vec![
             ("camelCase", vec!["camel", "Case"]),
             ("PascalCase", vec!["Pascal", "Case"]),
-            ("snake_case", vec!["snake", "_", "case"]),
-            ("kebab-case", vec!["kebab", "-", "case"]),
-            ("Title_Case", vec!["Title", "_", "Case"]),
+            ("snake_case", vec!["snake", "case"]),
+            ("kebab-case", vec!["kebab", "case"]),
+            ("Title_Case", vec!["Title", "Case"]),
             // ("aCamelCase", vec!["a", "Camel", "Case"]),
             // ("HTTPVerb", vec!["HTTP", "Verb"]),
             // ("CONSTANT", vec!["CONSTANT"]),
