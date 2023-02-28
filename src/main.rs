@@ -1,3 +1,4 @@
+use itertools::Itertools;
 fn main() {
     let mut args = std::env::args().into_iter();
     let _ = args.next();
@@ -10,6 +11,7 @@ fn main() {
 
     let mut search_terms = vec![search_term.clone()];
     let mut replacement_terms = vec![replacement_term.clone()];
+    // NEXT: generate more variants on the search/replace pattern.
     for boundary_char in boundary_chars {
         search_terms.push(tokenized_search_term.join(boundary_char));
         replacement_terms.push(tokenized_replacement_term.join(boundary_char));
@@ -81,7 +83,6 @@ fn find_boundary_indices(search_term: &str) -> Vec<usize> {
 }
 
 fn tokenize(search_term: &str) -> Vec<&str> {
-    use itertools::Itertools;
     let boundaries = find_boundary_indices(search_term);
     let mut tokens = Vec::new();
     for (start, end) in boundaries.iter().tuple_windows() {
@@ -94,9 +95,56 @@ fn tokenize(search_term: &str) -> Vec<&str> {
     return tokens;
 }
 
+#[derive(Debug, Eq, PartialEq)]
+enum CapitalizationStrategy {
+    FirstTokenCapitalized,
+    RestTokensCapitalized,
+    AllCharactersCapitalized,
+    NoCharactersCapitalized,
+}
+
+struct Strategy {
+    joiner: &'static str,
+    capitalization: Vec<CapitalizationStrategy>,
+}
+// Join a tokenized, all-lowercase term back together using different strategies, e.g. PascalCase, camelCase.
+fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
+    use CapitalizationStrategy::*;
+    let strategies = vec![Strategy {
+        capitalization: vec![RestTokensCapitalized],
+        joiner: "",
+    }];
+    let mut results = vec![];
+    for strategy in strategies {
+        let capitalization = strategy.capitalization;
+        let mut result = String::from("");
+        let mut first_token = true;
+        for token in tokenized_term.clone() {
+            // TODO: unicode grapheme cluster aware
+            let mut first_char = true;
+            for char in token.chars() {
+                let should_be_uppercase = capitalization.contains(&AllCharactersCapitalized)
+                    || (first_char
+                        && ((capitalization.contains(&FirstTokenCapitalized) && first_token)
+                            || (capitalization.contains(&RestTokensCapitalized) && !first_token)));
+                if should_be_uppercase {
+                    result.push_str(&char.to_uppercase().join(""));
+                } else {
+                    result.push(char);
+                }
+                first_char = false;
+            }
+            result.push_str(strategy.joiner);
+            first_token = false;
+        }
+        results.push(result);
+    }
+    return results;
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{find_boundary_indices, tokenize};
+    use crate::{find_boundary_indices, generate_variants, tokenize};
     use pretty_assertions::assert_eq;
     #[test]
     fn test_find_boundary_indices() {
@@ -126,15 +174,23 @@ mod tests {
             ("snake_case", vec!["snake", "case"]),
             ("kebab-case", vec!["kebab", "case"]),
             ("Title_Case", vec!["Title", "Case"]),
-            // ("aCamelCase", vec!["a", "Camel", "Case"]),
-            // ("HTTPVerb", vec!["HTTP", "Verb"]),
-            // ("CONSTANT", vec!["CONSTANT"]),
-            // ("a_constant", vec!["a", "_", "constant"]),
-            // ("a_Constant", vec!["a", "_", "Constant"]),
-            // ("A_constant", vec!["A", "_", "constant"]),
-            // ("A_B", vec!["A", "_", "B"]),
-            // ("A_b", vec!["A", "_", "b"]),
-            // ("CONSTANT_CASE", vec!["CONSTANT", "_", "CASE"]),
+            ("aCamelCase", vec!["a", "Camel", "Case"]),
+            ("HTTPVerb", vec!["HTTP", "Verb"]),
+            ("CONSTANT", vec!["CONSTANT"]),
+            ("a_constant", vec!["a", "constant"]),
+            ("a_Constant", vec!["a", "Constant"]),
+            ("A_constant", vec!["A", "constant"]),
+            ("A_B", vec!["A", "B"]),
+            ("A_b", vec!["A", "b"]),
+            // TODO: CONSTANT_CASE doesn't work
+            // Diff < left / right > :
+            //  [
+            // <    "CONSTAN",
+            // <    "T_CASE",
+            // >    "CONSTANT",
+            // >    "CASE",
+            //  ]
+            // ("CONSTANT_CASE", vec!["CONSTANT", "CASE"]),
             // ("aC", vec!["a", "C"]),
             // , ["aC", "a-c", "a_c", "A_C"]
         ];
@@ -143,6 +199,20 @@ mod tests {
                 tokenize(test.0),
                 test.1,
                 "testing {}, expected {:?}",
+                test.0,
+                test.1,
+            );
+        }
+    }
+
+    #[test]
+    fn test_generate_variants() {
+        let tests = vec![(vec!["all", "cases", "covered"], vec!["allCasesCovered"])];
+        for test in tests {
+            assert_eq!(
+                generate_variants(test.0.clone()),
+                test.1,
+                "testing {:?}, expected {:?}",
                 test.0,
                 test.1,
             );
