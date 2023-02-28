@@ -131,6 +131,16 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
             capitalization: vec![],
             joiner: "-",
         },
+        // Title_Case
+        Strategy {
+            capitalization: vec![FirstTokenCapitalized, RestTokensCapitalized],
+            joiner: "_",
+        },
+        // CONSTANT_CASE
+        Strategy {
+            capitalization: vec![AllCharactersCapitalized],
+            joiner: "_",
+        },
     ];
     let mut results = vec![];
     for strategy in strategies {
@@ -234,6 +244,8 @@ mod tests {
                 "AllCasesCovered",
                 "all_cases_covered",
                 "all-cases-covered",
+                "All_Cases_Covered",
+                "ALL_CASES_COVERED",
             ],
         )];
         for test in tests {
