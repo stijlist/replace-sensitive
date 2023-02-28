@@ -5,16 +5,16 @@ fn main() {
     let search_term = args.next().expect("no search term provided");
     let replacement_term = args.next().expect("no replacement term provided");
 
-    let boundary_chars = ["_", "-"];
     let tokenized_search_term = tokenize(&search_term);
     let tokenized_replacement_term = tokenize(&replacement_term);
 
     let mut search_terms = vec![search_term.clone()];
     let mut replacement_terms = vec![replacement_term.clone()];
-    // NEXT: generate more variants on the search/replace pattern.
-    for boundary_char in boundary_chars {
-        search_terms.push(tokenized_search_term.join(boundary_char));
-        replacement_terms.push(tokenized_replacement_term.join(boundary_char));
+    for variant in generate_variants(tokenized_search_term) {
+        search_terms.push(variant);
+    }
+    for variant in generate_variants(tokenized_replacement_term) {
+        replacement_terms.push(variant);
     }
     let ac = aho_corasick::AhoCorasick::new(search_terms);
     ac.stream_replace_all(std::io::stdin(), std::io::stdout(), &replacement_terms)
