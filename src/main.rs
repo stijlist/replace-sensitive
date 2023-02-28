@@ -115,7 +115,7 @@ struct Strategy {
     joiner: &'static str,
     capitalization: Vec<CapitalizationStrategy>,
 }
-// Join a tokenized, all-lowercase term back together using different strategies, e.g. PascalCase, camelCase.
+// Join a tokenized term back together using different strategies, e.g. PascalCase, camelCase.
 fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
     use CapitalizationStrategy::*;
     let strategies = vec![
@@ -131,12 +131,12 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
         },
         // snake_case
         Strategy {
-            capitalization: vec![],
+            capitalization: vec![NoCharactersCapitalized],
             joiner: "_",
         },
         // kebab-case
         Strategy {
-            capitalization: vec![],
+            capitalization: vec![NoCharactersCapitalized],
             joiner: "-",
         },
         // Title_Case
@@ -153,12 +153,21 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
     let mut results = vec![];
     for strategy in strategies {
         let capitalization = strategy.capitalization;
+        // TODO: do this at the type level?
+        if capitalization.contains(&NoCharactersCapitalized) && capitalization.len() > 1 {
+            panic!("unsatisfiable: {:?}", capitalization);
+        }
         let mut result = String::from("");
         for (index, token) in tokenized_term.clone().iter().enumerate() {
             let first_token = index == 0;
             // TODO: unicode grapheme cluster aware
             let mut first_char = true;
             for char in token.chars() {
+                if capitalization.contains(&NoCharactersCapitalized) {
+                    result.push_str(&char.to_lowercase().join(""));
+                    continue;
+                }
+
                 let should_be_uppercase = capitalization.contains(&AllCharactersCapitalized)
                     || (first_char
                         && ((capitalization.contains(&FirstTokenCapitalized) && first_token)
@@ -166,7 +175,7 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
                 if should_be_uppercase {
                     result.push_str(&char.to_uppercase().join(""));
                 } else {
-                    result.push(char);
+                    result.push_str(&char.to_lowercase().join(""));
                 }
                 first_char = false;
             }
@@ -241,17 +250,30 @@ mod tests {
 
     #[test]
     fn test_generate_variants() {
-        let tests = vec![(
-            vec!["all", "cases", "covered"],
-            vec![
-                "allCasesCovered",
-                "AllCasesCovered",
-                "all_cases_covered",
-                "all-cases-covered",
-                "All_Cases_Covered",
-                "ALL_CASES_COVERED",
-            ],
-        )];
+        let tests = vec![
+            (
+                vec!["all", "cases", "covered"],
+                vec![
+                    "allCasesCovered",
+                    "AllCasesCovered",
+                    "all_cases_covered",
+                    "all-cases-covered",
+                    "All_Cases_Covered",
+                    "ALL_CASES_COVERED",
+                ],
+            ),
+            (
+                vec!["AlL", "cAsES", "cOvErED"],
+                vec![
+                    "allCasesCovered",
+                    "AllCasesCovered",
+                    "all_cases_covered",
+                    "all-cases-covered",
+                    "All_Cases_Covered",
+                    "ALL_CASES_COVERED",
+                ],
+            ),
+        ];
         for test in tests {
             assert_eq!(
                 generate_variants(test.0.clone()),
