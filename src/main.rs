@@ -160,11 +160,11 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
         let mut result = String::from("");
         for (index, token) in tokenized_term.clone().iter().enumerate() {
             let first_token = index == 0;
-            // TODO: unicode grapheme cluster aware
             let mut first_char = true;
-            for char in token.chars() {
+            use unicode_segmentation::UnicodeSegmentation;
+            for char in token.graphemes(true) {
                 if capitalization.contains(&NoCharactersCapitalized) {
-                    result.push_str(&char.to_lowercase().join(""));
+                    result.push_str(&char.to_lowercase());
                     continue;
                 }
 
@@ -173,9 +173,9 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
                         && ((capitalization.contains(&FirstTokenCapitalized) && first_token)
                             || (capitalization.contains(&RestTokensCapitalized) && !first_token)));
                 if should_be_uppercase {
-                    result.push_str(&char.to_uppercase().join(""));
+                    result.push_str(&char.to_uppercase());
                 } else {
-                    result.push_str(&char.to_lowercase().join(""));
+                    result.push_str(&char.to_lowercase());
                 }
                 first_char = false;
             }
