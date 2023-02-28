@@ -110,10 +110,18 @@ struct Strategy {
 // Join a tokenized, all-lowercase term back together using different strategies, e.g. PascalCase, camelCase.
 fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
     use CapitalizationStrategy::*;
-    let strategies = vec![Strategy {
-        capitalization: vec![RestTokensCapitalized],
-        joiner: "",
-    }];
+    let strategies = vec![
+        // camelCase
+        Strategy {
+            capitalization: vec![RestTokensCapitalized],
+            joiner: "",
+        },
+        // PascalCase
+        Strategy {
+            capitalization: vec![FirstTokenCapitalized, RestTokensCapitalized],
+            joiner: "",
+        },
+    ];
     let mut results = vec![];
     for strategy in strategies {
         let capitalization = strategy.capitalization;
@@ -207,7 +215,13 @@ mod tests {
 
     #[test]
     fn test_generate_variants() {
-        let tests = vec![(vec!["all", "cases", "covered"], vec!["allCasesCovered"])];
+        let tests = vec![(
+            vec!["all", "cases", "covered"],
+            vec![
+                "allCasesCovered",
+                "AllCasesCovered",
+            ],
+        )];
         for test in tests {
             assert_eq!(
                 generate_variants(test.0.clone()),
