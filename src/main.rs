@@ -121,13 +121,23 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
             capitalization: vec![FirstTokenCapitalized, RestTokensCapitalized],
             joiner: "",
         },
+        // snake_case
+        Strategy {
+            capitalization: vec![],
+            joiner: "_",
+        },
+        // kebab-case
+        Strategy {
+            capitalization: vec![],
+            joiner: "-",
+        },
     ];
     let mut results = vec![];
     for strategy in strategies {
         let capitalization = strategy.capitalization;
         let mut result = String::from("");
-        let mut first_token = true;
-        for token in tokenized_term.clone() {
+        for (index, token) in tokenized_term.clone().iter().enumerate() {
+            let first_token = index == 0;
             // TODO: unicode grapheme cluster aware
             let mut first_char = true;
             for char in token.chars() {
@@ -142,8 +152,10 @@ fn generate_variants(tokenized_term: Vec<&str>) -> Vec<String> {
                 }
                 first_char = false;
             }
-            result.push_str(strategy.joiner);
-            first_token = false;
+            let last_token = index == tokenized_term.len() - 1;
+            if !last_token {
+                result.push_str(strategy.joiner);
+            }
         }
         results.push(result);
     }
@@ -220,6 +232,8 @@ mod tests {
             vec![
                 "allCasesCovered",
                 "AllCasesCovered",
+                "all_cases_covered",
+                "all-cases-covered",
             ],
         )];
         for test in tests {
