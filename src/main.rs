@@ -46,13 +46,17 @@ fn main() {
 fn find_boundary_indices(search_term: &str) -> Vec<usize> {
     // let mut tokens: Vec<String> = vec![];
     // The first index is a boundary.
-    let mut boundaries = vec![0];
+    let mut boundaries = vec![];
     let mut iter = search_term.chars().peekable();
     let mut index = 0;
-    iter.next();
-    index += 1;
     let boundary_characters = ['_', '-'];
     while let Some(c) = iter.next() {
+        // TODO: this is_first_character handling is ugly - would be good to handle it in just one
+        // place.
+        let is_first_character = index == 0;
+        if is_first_character {
+            boundaries.push(index);
+        }
         let curr_is_uppercase = c.is_uppercase();
         let curr_is_boundary = boundary_characters.contains(&c);
         if curr_is_boundary {
@@ -69,7 +73,9 @@ fn find_boundary_indices(search_term: &str) -> Vec<usize> {
             && next_character.unwrap().is_uppercase() ^ curr_is_uppercase;
         if next_character_is_case_change {
             if curr_is_uppercase {
-                boundaries.push(index);
+                if !is_first_character {
+                    boundaries.push(index);
+                }
             } else {
                 boundaries.push(index + 1);
             }
@@ -215,7 +221,7 @@ mod tests {
             ("A_B", vec!["A", "B"]),
             ("A_b", vec!["A", "b"]),
             ("CONSTANT_CASE", vec!["CONSTANT", "CASE"]),
-            // ("aC", vec!["a", "C"]),
+            ("aC", vec!["a", "C"]),
             // , ["aC", "a-c", "a_c", "A_C"]
         ];
         for test in tests {
