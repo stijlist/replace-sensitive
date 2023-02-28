@@ -4,8 +4,8 @@ Replace an identifier and all "variants" of it (e.g. camelCase, PascalCase,
 snake_case, kebab-case, TITLE_CASE, etc.) with a different identifier and all
 "variants" of it.
 
-    $ replace-sensitive string_a_ling zing_a_ling
-    $ replace-sensitive stringALing zingALing
+    $ echo "hello_world helloWorld" | replace-sensitive hello_world hi_world
+    hi_world hiWorld
 
 When an identifier only has one "token", it works just like sed, so
 
