@@ -218,10 +218,14 @@ mod tests {
             ("a_constant", vec!["a", "constant"]),
             ("a_Constant", vec!["a", "Constant"]),
             ("A_constant", vec!["A", "constant"]),
+            ("CONSTANT_CASE", vec!["CONSTANT", "CASE"]),
             ("A_B", vec!["A", "B"]),
             ("A_b", vec!["A", "b"]),
-            ("CONSTANT_CASE", vec!["CONSTANT", "CASE"]),
             ("aC", vec!["a", "C"]),
+            ("a-c", vec!["a", "c"]),
+            ("a_c", vec!["a", "c"]),
+            ("a-C", vec!["a", "C"]),
+            ("A-c", vec!["A", "c"]),
             // , ["aC", "a-c", "a_c", "A_C"]
         ];
         for test in tests {
