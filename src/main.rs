@@ -51,9 +51,10 @@ fn find_boundary_indices(search_term: &str) -> Vec<usize> {
     let mut index = 0;
     iter.next();
     index += 1;
+    let boundary_characters = ['_', '-'];
     while let Some(c) = iter.next() {
         let curr_is_uppercase = c.is_uppercase();
-        let curr_is_boundary = c == '_' || c == '-';
+        let curr_is_boundary = boundary_characters.contains(&c);
         if curr_is_boundary {
             boundaries.push(index);
             iter.next();
@@ -63,8 +64,9 @@ fn find_boundary_indices(search_term: &str) -> Vec<usize> {
             continue;
         }
         let next_character = iter.peek();
-        let next_character_is_case_change =
-            next_character.is_some() && next_character.unwrap().is_uppercase() ^ curr_is_uppercase;
+        let next_character_is_case_change = next_character.is_some()
+            && !boundary_characters.contains(next_character.unwrap())
+            && next_character.unwrap().is_uppercase() ^ curr_is_uppercase;
         if next_character_is_case_change {
             if curr_is_uppercase {
                 boundaries.push(index);
@@ -212,15 +214,7 @@ mod tests {
             ("A_constant", vec!["A", "constant"]),
             ("A_B", vec!["A", "B"]),
             ("A_b", vec!["A", "b"]),
-            // TODO: CONSTANT_CASE doesn't work
-            // Diff < left / right > :
-            //  [
-            // <    "CONSTAN",
-            // <    "T_CASE",
-            // >    "CONSTANT",
-            // >    "CASE",
-            //  ]
-            // ("CONSTANT_CASE", vec!["CONSTANT", "CASE"]),
+            ("CONSTANT_CASE", vec!["CONSTANT", "CASE"]),
             // ("aC", vec!["a", "C"]),
             // , ["aC", "a-c", "a_c", "A_C"]
         ];
